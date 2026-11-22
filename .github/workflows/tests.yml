@@ -1,0 +1,18 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Shell scripts parse
+        run: for f in install.sh build.sh hooks/*.sh; do bash -n "$f"; done
+      - name: Hooks, installer, LaunchAgent and build (nothing is loaded into launchd)
+        run: python3 -m unittest discover -s tests -v
