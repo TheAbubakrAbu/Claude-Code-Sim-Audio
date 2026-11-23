@@ -39,12 +39,17 @@ IGNORES = [
 
 class PostHook(unittest.TestCase):
     def setUp(self):
-        self.home = tempfile.mkdtemp(prefix="sim-audio-home-")
+        # The guard's folder sits inside a folder of this test's own. A marker that escapes it
+        # (test_session_ids_cannot_escape_the_marker_folder) then lands in there and is deleted with
+        # it, not in the shared temporary folder, where it would fail every later run.
+        self.tmp = tempfile.mkdtemp(prefix="sim-audio-home-")
+        self.home = os.path.join(self.tmp, "home")
+        os.makedirs(self.home)
         self.seen = os.path.join(self.home, "hook-seen")
         self.env = dict(os.environ, SIM_AUDIO_HOME=self.home)
 
     def tearDown(self):
-        shutil.rmtree(self.home, ignore_errors=True)
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def run_hook(self, command, session="session-1", shim=False, payload=None):
         if payload is None:
@@ -124,6 +129,12 @@ class PostHook(unittest.TestCase):
         text = self.note(self.run_hook(DRIVES[0], session="via-shim", shim=True))
         self.assertIn("BlackHole 2ch", text)
         self.assertTrue(os.path.exists(os.path.join(self.seen, "via-shim")))
+
+    def test_shim_passes_xcodebuild_commands_on_too(self):
+        command = DRIVES[6]
+        self.assertNotIn("simctl", command)  # only the shim's xcodebuild filter lets this one through
+        text = self.note(self.run_hook(command, session="via-shim-xcodebuild", shim=True))
+        self.assertIn("BlackHole 2ch", text)
 
     def test_shim_skips_commands_without_simctl_or_xcodebuild(self):
         proc = self.run_hook("echo hello", shim=True)

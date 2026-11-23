@@ -223,6 +223,23 @@ class Installer(unittest.TestCase):
         self.assertFalse(os.path.exists(data))
         self.assertFalse(os.path.lexists(self.link))
 
+    def test_purge_refuses_to_delete_the_home_folder_or_the_claude_folder(self):
+        # --purge ends in `rm -rf` of the data folder, so a --data that names the home folder or
+        # ~/.claude must be turned away. Both live in this test's throwaway folder here: an
+        # installer that lost the check could delete nothing else.
+        claude = os.path.join(self.home, ".claude")
+        os.makedirs(claude)
+        kept = [os.path.join(self.home, "keep.txt"), os.path.join(claude, "keep.txt")]
+        for path in kept:
+            with open(path, "w") as fh:
+                fh.write("mine")
+        for data in (self.home, claude, "~", "~/.claude"):
+            with self.subTest(data=data):
+                proc = self.install("--data", data, "--uninstall", "--purge", ok=False)
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertIn("refusing to delete", proc.stderr)
+                self.assertEqual([os.path.exists(path) for path in kept], [True, True])
+
     def test_leaves_a_simaudio_that_is_not_ours_alone(self):
         os.makedirs(self.bin)
         with open(self.link, "w") as fh:

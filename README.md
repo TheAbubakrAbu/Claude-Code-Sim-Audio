@@ -283,7 +283,7 @@ The hooks cover the moment Claude touches a simulator. For the standing rules (r
 ## Testing
 
 ```bash
-python3 -m unittest discover -s tests -v    # 44 tests; nothing is loaded, unmuted, or rerouted
+python3 -m unittest discover -s tests -v    # 46 tests; nothing is loaded, unmuted, or rerouted
 bash -n install.sh build.sh hooks/*.sh      # the shell scripts parse
 ```
 
